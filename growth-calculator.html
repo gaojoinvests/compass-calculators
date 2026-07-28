@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Wealth Growth Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#1F4D3A; --forest-deep:#163829; --cream:#F7F2E9; --cream-raised:#FFFDF8;
+    --sage:#A8BFA0; --sage-deep:#7E9A78; --ink:#24302B; --ink-soft:#5B6B5F; --line:#DED4BE;
+    --alert:#B3492F;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
+  .wrap{max-width:820px;margin:0 auto;padding:36px 24px 80px;}
+  .back{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--forest);text-decoration:none;
+    display:inline-flex;align-items:center;gap:6px;margin-bottom:22px;
+  }
+  .back:hover{text-decoration:underline;}
+  header{margin-bottom:32px;border-bottom:1px solid var(--line);padding-bottom:24px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage-deep);margin-bottom:10px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(26px,4vw,38px);margin:0 0 10px;color:var(--forest-deep);letter-spacing:-0.01em;}
+  header p{max-width:600px;color:var(--ink-soft);margin:0;font-size:15px;}
+
+  .panel{background:var(--cream-raised);border:1px solid var(--line);border-radius:10px;padding:24px;}
+  .panel + .panel{margin-top:18px;}
+  .panel h2{font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin:0 0 16px;color:var(--forest-deep);}
+
+  label{display:block;font-size:12px;color:var(--ink-soft);margin:14px 0 5px;font-weight:500;}
+  label:first-of-type{margin-top:0;}
+  input[type=number], select{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;
+    font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--ink);
+  }
+  select{font-family:'Inter',sans-serif;}
+  input:focus, select:focus{outline:2px solid var(--forest);outline-offset:1px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:480px){
+    .two-col{grid-template-columns:1fr;}
+    .wrap{padding-left:16px;padding-right:16px;}
+  }
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
+  .switch{position:relative;width:38px;height:21px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider-el{position:absolute;inset:0;background:var(--line);border-radius:20px;cursor:pointer;transition:.15s;}
+  .slider-el:before{content:"";position:absolute;height:15px;width:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+  input:checked + .slider-el{background:var(--forest);}
+  input:checked + .slider-el:before{transform:translateX(17px);}
+  .sub-fields{display:none;padding-top:10px;}
+  .sub-fields.open{display:block;}
+
+  button.run{
+    width:100%;margin-top:18px;padding:13px;border:none;border-radius:6px;
+    background:var(--forest);color:#fff;font-weight:600;font-size:14px;cursor:pointer;letter-spacing:.02em;
+  }
+  button.run:hover{background:var(--forest-deep);}
+  .assumption{font-size:11px;color:var(--ink-soft);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+
+  #results{margin-top:24px;}
+  .summary-strip{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+  .summary-item{flex:1;min-width:140px;padding:16px 18px;background:var(--cream-raised);border-right:1px solid var(--line);}
+  .summary-item:last-child{border-right:none;}
+  .summary-item .label{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+  .summary-item .value{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--forest-deep);}
+  .summary-item .value.contrib{color:var(--ink);}
+  .summary-item .value.growth{color:var(--forest);}
+
+  svg text{font-family:'IBM Plex Mono',monospace;}
+  .legend{display:flex;gap:16px;margin-bottom:10px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;margin-top:16px;}
+  th{text-align:right;padding:9px 10px;background:var(--cream-raised);border-bottom:1px solid var(--line);color:var(--ink-soft);font-weight:600;}
+  th:first-child{text-align:left;}
+  td{text-align:right;padding:7px 10px;border-top:1px solid var(--line);}
+  td:first-child{text-align:left;}
+  .table-wrap{max-height:340px;overflow-y:auto;overflow-x:auto;border:1px solid var(--line);border-radius:8px;-webkit-overflow-scrolling:touch;}
+  .table-wrap table{min-width:400px;}
+  .table-wrap table{margin-top:0;}
+  .table-wrap thead th{position:sticky;top:0;}
+
+  footer{margin-top:36px;font-size:11px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:16px;}
+  #view-results{display:none;}
+
+  .slideup{
+    position:fixed; left:16px; right:16px; bottom:-200px;
+    max-width:600px; margin:0 auto;
+    background:var(--forest); color:#fff; border-radius:12px;
+    padding:20px 22px; box-shadow:0 12px 32px rgba(0,0,0,0.18);
+    transition:bottom .4s ease;
+    z-index:100;
+  }
+  .slideup.show{ bottom:16px; }
+  .slideup .close{
+    position:absolute; top:10px; right:14px; background:none; border:none;
+    color:var(--sage); font-size:20px; cursor:pointer; line-height:1; padding:4px;
+  }
+  .slideup h3{font-family:'Fraunces',serif; font-size:17px; margin:0 8px 6px 0; font-weight:600;}
+  .slideup p{color:var(--sage); font-size:13px; margin:0 0 14px; max-width:440px;}
+  .slideup form{display:flex; gap:8px; flex-wrap:wrap;}
+  .slideup input[type=email]{
+    flex:1; min-width:180px; padding:11px 13px; border-radius:6px; border:none;
+    font-family:'Inter',sans-serif; font-size:16px;
+  }
+  .slideup button[type=submit]{
+    padding:11px 18px; border-radius:6px; border:none; background:var(--sage);
+    color:var(--forest); font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap;
+  }
+  @media (max-width:480px){
+    .slideup{left:12px; right:12px; padding:18px;}
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="view-inputs">
+    <a href="index.html" class="back">&larr; All calculators</a>
+    <header>
+      <div class="eyebrow">The Wealth Growth Calculator</div>
+      <h1>What could your money grow to?</h1>
+      <p>See how a lump sum and regular contributions could grow over time — and how much of that growth is actually the interest working for you, not just what you put in.</p>
+    </header>
+
+    <div class="panel">
+      <h2>Your numbers</h2>
+      <label for="lumpSum">Starting lump sum (£)</label>
+      <input type="number" id="lumpSum" value="2000" min="0">
+
+      <div class="two-col">
+        <div>
+          <label for="monthly">Monthly contribution (£)</label>
+          <input type="number" id="monthly" value="250" min="0">
+        </div>
+        <div>
+          <label for="rate">Expected annual growth (%)</label>
+          <input type="number" id="rate" value="7" step="0.1">
+        </div>
+      </div>
+
+      <label for="years">Time horizon (years)</label>
+      <input type="number" id="years" value="20" min="1">
+
+      <div class="toggle-row">
+        <span style="font-size:13px;font-weight:500;">Increase my contribution each year</span>
+        <label class="switch"><input type="checkbox" id="toggle-step"><span class="slider-el"></span></label>
+      </div>
+      <div class="sub-fields" id="fields-step">
+        <label for="stepRate">Increase contribution by this much each year (%)</label>
+        <input type="number" id="stepRate" value="2.5" step="0.1">
+        <p class="assumption" style="border:none;margin-top:8px;padding-top:0;">A common choice is roughly the rate of inflation, so your contribution keeps the same real spending power over time — but this can be any percentage you like.</p>
+      </div>
+
+      <button class="run" onclick="showResults()">Show my results</button>
+      <p class="assumption">Assumes growth compounds monthly at a constant rate — real investments fluctuate year to year, so treat this as a long-run estimate, not a guarantee.</p>
+    </div>
+  </div>
+
+  <div id="view-results">
+    <button class="back" onclick="showInputs()" style="background:none;border:none;cursor:pointer;padding:0;">&larr; Edit my numbers</button>
+    <header>
+      <div class="eyebrow">The Wealth Growth Calculator / Your results</div>
+      <h1>Here's how it grows</h1>
+    </header>
+    <div id="results"></div>
+  </div>
+
+</div>
+
+<footer>
+  Educational estimate only — not financial or investment advice. Investment returns are never guaranteed and can go down as well as up.
+</footer>
+
+<div class="slideup" id="slideup">
+  <button class="close" onclick="dismissSlideup()" aria-label="Close">&times;</button>
+  <h3>Get free access to the wealth-building app</h3>
+  <p>I'm building an app to help you grow long-term wealth — free while it's in beta. Enter your email for early access, and I'll send this breakdown straight to your inbox.</p>
+  <form onsubmit="event.preventDefault(); submitSlideup(this);">
+    <input type="email" required placeholder="you@email.com">
+    <button type="submit">Get early access</button>
+  </form>
+</div>
+
+<script>
+let lastResultsSummary = '';
+
+// ===== EmailJS config — replace these three with your own values from emailjs.com =====
+const EMAILJS_PUBLIC_KEY = 'oF0fp_0wAxJaHGPSA';
+const EMAILJS_SERVICE_ID = 'service_1npg5or';
+const EMAILJS_TEMPLATE_ID = 'template_zlsy5zj';
+const OWNER_EMAIL = 'gaojoinvests@gmail.com'; // <-- your own email, so every signup also lands with you
+// ========================================================================================
+
+if(window.emailjs){
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
+
+// Builds the actual email a subscriber receives: their results, plus confirmation
+// they're on the waitlist for the app. Each calculator passes in its own name and results.
+function buildSubscriberEmail(calculatorName, resultsBody){
+  return [
+    'Hi there,',
+    '',
+    `Thanks for trying the ${calculatorName} — here's a copy of your results:`,
+    '',
+    resultsBody,
+    '',
+    "You're now on the waiting list for Compass, the wealth-building app I'm building — free to try when it launches.",
+    "I'll email you the moment early access opens up, so keep an eye on this inbox.",
+    '',
+    'Talk soon,',
+    'The Compass Team'
+  ].join('\n');
+}
+
+function submitSlideup(form){
+  slideupHandled = true;
+  const email = form.querySelector('input[type=email]').value;
+  const resultsBody = lastResultsSummary || 'Run the calculator to see your results here.';
+  const shareUrl = buildShareURL();
+  const resultsBodyWithLink = `${resultsBody}\n\nSee this with the full charts and breakdown online:\n${shareUrl}`;
+  const calculatorName = 'Wealth Growth Calculator';
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: email,
+    subject: `Your ${calculatorName} results — and you're on the list`,
+    message: buildSubscriberEmail(calculatorName, resultsBodyWithLink)
+  });
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: OWNER_EMAIL,
+    subject: `New signup: ${calculatorName}`,
+    message: `New signup: ${email}\n\nTheir results:\n${resultsBodyWithLink}`
+  });
+
+  form.innerHTML = '<p style="color:#fff;font-weight:600;margin:0;">Sent — check your inbox for your results.</p>';
+}
+
+const toggle = document.getElementById('toggle-step');
+const fields = document.getElementById('fields-step');
+toggle.addEventListener('change', ()=> fields.classList.toggle('open', toggle.checked));
+
+// All input field IDs that make up a full scenario — used to build a shareable link
+// and to read one back in when someone arrives via that link.
+const SHAREABLE_FIELDS = [
+  ['lumpSum','value'], ['monthly','value'], ['rate','value'], ['years','value'],
+  ['toggle-step','checked'], ['stepRate','value']
+];
+
+function buildShareURL(){
+  const params = new URLSearchParams();
+  SHAREABLE_FIELDS.forEach(([id, kind])=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    params.set(id, kind === 'checked' ? (el.checked ? '1' : '0') : el.value);
+  });
+  const base = window.location.origin + window.location.pathname;
+  return `${base}?${params.toString()}`;
+}
+
+function applyParamsFromURLAndShowResults(){
+  const params = new URLSearchParams(window.location.search);
+  if(!params.has('lumpSum')) return false;
+  SHAREABLE_FIELDS.forEach(([id, kind])=>{
+    if(!params.has(id)) return;
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(kind === 'checked'){
+      el.checked = params.get(id) === '1';
+      el.dispatchEvent(new Event('change'));
+    } else {
+      el.value = params.get(id);
+    }
+  });
+  showResults();
+  return true;
+}
+
+let slideupTimer = null;
+let slideupHandled = false;
+
+function showInputs(){
+  document.getElementById('view-results').style.display='none';
+  document.getElementById('view-inputs').style.display='block';
+  window.scrollTo(0,0);
+  if(slideupTimer){ clearTimeout(slideupTimer); slideupTimer = null; }
+  dismissSlideup(false);
+}
+function showResults(){
+  runGrowth();
+  document.getElementById('view-inputs').style.display='none';
+  document.getElementById('view-results').style.display='block';
+  window.scrollTo(0,0);
+  if(!slideupHandled){
+    if(slideupTimer) clearTimeout(slideupTimer);
+    slideupTimer = setTimeout(()=>{
+      document.getElementById('slideup').classList.add('show');
+    }, 10000);
+  }
+}
+function dismissSlideup(remember){
+  document.getElementById('slideup').classList.remove('show');
+  if(remember !== false) slideupHandled = true;
+}
+
+
+function fmt(n){ return '£' + Math.round(n).toLocaleString('en-GB'); }
+function fmt2(n){ return '£' + n.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function simulateGrowth(lumpSum, monthly, annualRatePct, years, stepPct){
+  const monthlyRate = annualRatePct/100/12;
+  let balance = lumpSum;
+  let totalContributed = lumpSum;
+  let contribution = monthly;
+  const yearly = []; // {year, contributed, balance}
+  for(let y=1; y<=years; y++){
+    let yearContribution = 0;
+    for(let m=0; m<12; m++){
+      balance = balance*(1+monthlyRate) + contribution;
+      totalContributed += contribution;
+      yearContribution += contribution;
+    }
+    yearly.push({year:y, contribution: contribution, contributedThisYear: yearContribution, balance});
+    if(stepPct){ contribution = contribution * (1+stepPct/100); }
+  }
+  return {finalBalance: balance, totalContributed, totalGrowth: balance-totalContributed, yearly};
+}
+
+function buildGrowthChart(yearly, lumpSum){
+  const w=680, h=220, padL=54, padR=12, padT=14, padB=26;
+  const plotW=w-padL-padR, plotH=h-padT-padB;
+  const maxBal = Math.max(...yearly.map(y=>y.balance)) * 1.08;
+  const n = yearly.length;
+  const x = i => padL + (i/(n)) * plotW;
+  const y = v => padT + plotH - (v/maxBal)*plotH;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" width="100%" style="overflow:visible;">`;
+  for(let g=0; g<=3; g++){
+    const val = maxBal*g/3;
+    const yy = y(val);
+    svg += `<line x1="${padL}" y1="${yy}" x2="${w-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
+    svg += `<text x="${padL-8}" y="${yy+3}" font-size="9" fill="var(--ink-soft)" text-anchor="end">${fmt(val)}</text>`;
+  }
+
+  // contributed area (bottom layer) and balance line (total incl growth)
+  let contribPath = `M${x(0)} ${y(lumpSum)} `;
+  let balPath = `M${x(0)} ${y(lumpSum)} `;
+  let cum = lumpSum;
+  yearly.forEach((yr,i)=>{
+    cum += yr.contributedThisYear;
+    contribPath += `L${x(i+1)} ${y(cum)} `;
+    balPath += `L${x(i+1)} ${y(yr.balance)} `;
+  });
+  const contribArea = contribPath + `L${x(n)} ${y(0)} L${x(0)} ${y(0)} Z`;
+  const balArea = balPath + `L${x(n)} ${y(0)} L${x(0)} ${y(0)} Z`;
+  svg += `<path d="${balArea}" fill="var(--forest)" opacity="0.18"/>`;
+  svg += `<path d="${contribArea}" fill="var(--sage-deep)" opacity="0.35"/>`;
+  svg += `<path d="${balPath}" fill="none" stroke="var(--forest)" stroke-width="2"/>`;
+  svg += `<path d="${contribPath}" fill="none" stroke="var(--sage-deep)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+
+  const labelEvery = Math.max(1, Math.round(n/8));
+  for(let i=0;i<=n;i+=labelEvery){
+    svg += `<text x="${x(i)}" y="${h-padB+14}" font-size="9" fill="var(--ink-soft)" text-anchor="middle">yr ${i}</text>`;
+  }
+  svg += `</svg>`;
+  return svg;
+}
+
+function runGrowth(){
+  const lumpSum = parseFloat(document.getElementById('lumpSum').value)||0;
+  const monthly = parseFloat(document.getElementById('monthly').value)||0;
+  const rate = parseFloat(document.getElementById('rate').value)||0;
+  const years = parseInt(document.getElementById('years').value)||1;
+  const stepOn = document.getElementById('toggle-step').checked;
+  const stepPct = stepOn ? (parseFloat(document.getElementById('stepRate').value)||0) : 0;
+
+  const sim = simulateGrowth(lumpSum, monthly, rate, years, stepPct);
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  const strip = document.createElement('div'); strip.className='summary-strip';
+  strip.innerHTML = `
+    <div class="summary-item"><div class="label">Final balance</div><div class="value">${fmt(sim.finalBalance)}</div></div>
+    <div class="summary-item"><div class="label">You contributed</div><div class="value contrib">${fmt(sim.totalContributed)}</div></div>
+    <div class="summary-item"><div class="label">Growth earned</div><div class="value growth">${fmt(sim.totalGrowth)}</div></div>
+  `;
+  results.appendChild(strip);
+
+  const chartPanel = document.createElement('div'); chartPanel.className='panel';
+  chartPanel.innerHTML = '<h2>How it builds up</h2>';
+  const legend = document.createElement('div'); legend.className='legend';
+  legend.innerHTML = `<span><i style="background:var(--forest);"></i>Total balance</span><span><i style="background:var(--sage-deep);"></i>What you put in</span>`;
+  chartPanel.appendChild(legend);
+  const chartDiv = document.createElement('div');
+  chartDiv.innerHTML = buildGrowthChart(sim.yearly, lumpSum);
+  chartPanel.appendChild(chartDiv);
+  const note = document.createElement('p'); note.className='assumption';
+  note.style.marginTop = '14px';
+  note.innerHTML = `The gap between the two lines is growth earned, not money you paid in — by year ${years} that gap is ${fmt(sim.totalGrowth)}.`;
+  chartPanel.appendChild(note);
+  results.appendChild(chartPanel);
+
+  const tablePanel = document.createElement('div'); tablePanel.className='panel'; tablePanel.style.marginTop='18px';
+  tablePanel.innerHTML = '<h2>Year by year</h2>';
+  const tableWrap = document.createElement('div'); tableWrap.className='table-wrap';
+  let tableHtml = `<table><thead><tr><th>Year</th><th>Monthly contribution</th><th>Balance at year end</th></tr></thead><tbody>`;
+  sim.yearly.forEach(yr=>{
+    tableHtml += `<tr><td>${yr.year}</td><td>${fmt2(yr.contribution)}</td><td>${fmt(yr.balance)}</td></tr>`;
+  });
+  tableHtml += '</tbody></table>';
+  tableWrap.innerHTML = tableHtml;
+  tablePanel.appendChild(tableWrap);
+  results.appendChild(tablePanel);
+
+  // plain-text summary for the email
+  lastResultsSummary = [
+    'Your Wealth Growth Calculator results',
+    '',
+    `Starting lump sum: ${fmt(lumpSum)}`,
+    `Monthly contribution: ${fmt(monthly)}${stepOn ? ` (increasing ${stepPct}% each year)` : ''}`,
+    `Expected annual growth: ${rate}%`,
+    `Time horizon: ${years} years`,
+    '',
+    `Final balance: ${fmt(sim.finalBalance)}`,
+    `You contributed: ${fmt(sim.totalContributed)}`,
+    `Growth earned: ${fmt(sim.totalGrowth)}`,
+    '',
+    '(Educational estimate only — not financial advice.)'
+  ].join('\n');
+}
+
+// If this page was opened via a shared results link, jump straight to the results
+applyParamsFromURLAndShowResults();
+</script>
+</body>
+</html>
