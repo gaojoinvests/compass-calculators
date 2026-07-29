@@ -565,7 +565,7 @@ function simulateMix(split, cfg, budget, collectHistory){
       leftover -= give;
     });
 
-    const monthRecord = collectHistory ? {month: months+1, payments:{}, balances:{}, interestThisMonth: 0} : null;
+    const monthRecord = collectHistory ? {month: months+1, payments:{}, balances:{}, interestByKey:{}, interestThisMonth: 0} : null;
 
     active.forEach(d=>{
       const payment = d._min + (extraFor[d.key]||0);
@@ -579,6 +579,7 @@ function simulateMix(split, cfg, budget, collectHistory){
       if(d.balance <= 0.01 && !cleared[d.key]) cleared[d.key] = months+1;
       if(monthRecord){
         monthRecord.interestThisMonth += interest;
+        monthRecord.interestByKey[d.key] = interest;
         if(d.key==='loan'){
           monthRecord.payments.loanContractual = d._min;
           monthRecord.payments.loanOverpay = payment - d._min;
@@ -711,7 +712,7 @@ function simulateSmoothedLoan(split, cfg, budget, loanOverpay, collectHistory){
       leftover -= give;
     }
 
-    const monthRecord = collectHistory ? {month: months+1, payments:{}, balances:{}, interestThisMonth: 0} : null;
+    const monthRecord = collectHistory ? {month: months+1, payments:{}, balances:{}, interestByKey:{}, interestThisMonth: 0} : null;
 
     active.forEach(d=>{
       const payment = d.key==='loan' ? d._min + loanExtra : d._min + (extraFor[d.key]||0);
@@ -725,6 +726,7 @@ function simulateSmoothedLoan(split, cfg, budget, loanOverpay, collectHistory){
       if(d.balance <= 0.01 && !cleared[d.key]) cleared[d.key] = months+1;
       if(monthRecord){
         monthRecord.interestThisMonth += interest;
+        monthRecord.interestByKey[d.key] = interest;
         if(d.key==='loan'){
           monthRecord.payments.loanContractual = d._min;
           monthRecord.payments.loanOverpay = payment - d._min;
@@ -843,13 +845,21 @@ function optimizeMix(financeAmount, cashAvailable, cfg, budget){
 function buildMonthlyTable(history, items){
   const keys = items.map(([k])=>k);
   let html = `<div style="max-height:420px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:6px;">
-  <table style="width:100%;min-width:480px;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">
-  <thead><tr style="position:sticky;top:0;background:var(--paper-raised);box-shadow:0 1px 0 var(--line);">
-    <th style="text-align:left;padding:9px 12px;">Month</th>
-    ${keys.map(k=>`<th style="text-align:right;padding:9px 12px;color:${COLORS[k]};">${LABELS[k]}</th>`).join('')}
-    <th style="text-align:right;padding:9px 12px;font-weight:600;">Total out</th>
-    <th style="text-align:right;padding:9px 12px;color:var(--alert);">Interest charged</th>
-  </tr></thead><tbody>`;
+  <table style="width:100%;min-width:${280 + keys.length*270}px;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">
+  <thead>
+    <tr style="position:sticky;top:0;background:var(--paper-raised);box-shadow:0 1px 0 var(--line);">
+      <th rowspan="2" style="text-align:left;padding:9px 12px;vertical-align:bottom;">Month</th>
+      ${keys.map(k=>`<th colspan="3" style="text-align:center;padding:9px 12px;color:${COLORS[k]};border-left:1px solid var(--line);">${LABELS[k]}</th>`).join('')}
+      <th rowspan="2" style="text-align:right;padding:9px 12px;font-weight:600;vertical-align:bottom;">Total out</th>
+    </tr>
+    <tr style="position:sticky;top:31px;background:var(--paper-raised);box-shadow:0 1px 0 var(--line);">
+      ${keys.map(k=>`
+        <th style="text-align:right;padding:6px 10px;font-weight:500;color:var(--ink-soft);border-left:1px solid var(--line);">Payment</th>
+        <th style="text-align:right;padding:6px 10px;font-weight:500;color:var(--alert);">Interest</th>
+        <th style="text-align:right;padding:6px 10px;font-weight:500;color:var(--ink-soft);">Balance</th>
+      `).join('')}
+    </tr>
+  </thead><tbody>`;
 
   history.forEach((r,i)=>{
     const rowBg = i%2===0 ? 'transparent' : 'rgba(0,0,0,0.02)';
@@ -857,10 +867,15 @@ function buildMonthlyTable(history, items){
       <td style="padding:7px 12px;">${r.month}</td>
       ${keys.map(k=>{
         const amt = r.payments[k]||0;
-        return `<td style="text-align:right;padding:7px 12px;">${amt>0.5 ? fmt(Math.round(amt)) : '—'}</td>`;
+        const interest = (r.interestByKey && r.interestByKey[k]) || 0;
+        const bal = (r.balances && r.balances[k]) || 0;
+        return `
+          <td style="text-align:right;padding:7px 10px;border-left:1px solid var(--line);">${amt>0.5 ? fmt(Math.round(amt)) : '—'}</td>
+          <td style="text-align:right;padding:7px 10px;color:var(--alert);">${interest>0.5 ? fmt2(interest) : '£0.00'}</td>
+          <td style="text-align:right;padding:7px 10px;">${fmt(Math.round(Math.max(0,bal)))}</td>
+        `;
       }).join('')}
       <td style="text-align:right;padding:7px 12px;font-weight:600;">${fmt(Math.round(r.total))}</td>
-      <td style="text-align:right;padding:7px 12px;color:var(--alert);">${r.interestThisMonth>0.5 ? fmt2(r.interestThisMonth) : '£0.00'}</td>
     </tr>`;
   });
   html += '</tbody></table></div>';
@@ -879,6 +894,9 @@ function runOptimizer(){
   const price = parseFloat(document.getElementById('price').value)||0;
   const cash = parseFloat(document.getElementById('cash').value)||0;
   const budget = parseFloat(document.getElementById('budget').value)||0;
+  // Used only as an internal comparison yardstick when a plain loan doesn't fit the stated
+  // budget — never exposed as a user-facing option or an alternative to choose from.
+  const BUDGET_FLEX_PCT = 10;
 
   const results = document.getElementById('results');
   results.innerHTML = '';
@@ -943,8 +961,18 @@ function runOptimizer(){
   // if they're ever both true single-loan scenarios, they land on exactly the same figure.
   // Crucially: the baseline always uses your entered term exactly, never silently extending it —
   // if a plain loan over that term genuinely isn't affordable at your stated budget, comparing
-  // against it wouldn't be fair either way, so we say so plainly rather than either hiding the
-  // comparison with no explanation or quoting a loan you explicitly said you couldn't take out.
+  // against it wouldn't be fair either way. But if you've said you have some flexibility on the
+  // Baseline comparison: a single ordinary loan for the whole amount, at the APR you entered.
+  // Preference order, most to least convenient:
+  //   1. Fits your entered term and budget exactly as stated — use that.
+  //   2. Doesn't fit as stated, but stretching the TERM by up to 10% (while keeping your exact
+  //      stated monthly payment) makes it work — a longer term is usually the less painful
+  //      trade-off, so this is tried before ever touching the payment amount.
+  //   3. Term-stretching alone isn't enough, but stretching the PAYMENT by up to 10% (keeping
+  //      your entered term) makes it work instead.
+  //   4. Neither works — no honest comparison to show.
+  // None of this ever appears as a selectable option — it only feeds the "you saved" figure,
+  // and the results only ever show what the optimizer actually chose.
   const financeAmount = price - cash;
   let savingsNote = '';
   let savingsTile = '';
@@ -952,7 +980,9 @@ function runOptimizer(){
   if(cfg.loanOn && financeAmount > 0.5){
     const standardPayment = amortizedPayment(financeAmount, cfg.loanApr, cfg.loanTerm);
     const baselineTolerance = Math.max(1, budget*0.005);
+
     if(standardPayment <= budget + baselineTolerance){
+      // Tier 1: fits your entered term and budget exactly as stated
       const baselineSim = simulateSingleLoanBaseline(financeAmount, cfg.loanApr, standardPayment);
       if(baselineSim){
         const baselineInterest = baselineSim.totalInterest;
@@ -962,8 +992,32 @@ function runOptimizer(){
         savingsNote = `<p class="note" style="margin-top:14px;">Compared with the default way most people do this: a single ${cfg.loanApr}% loan for ${fmt(Math.round(financeAmount))} over ${baselineTerm} months, paying ${fmt2(standardPayment)}/month (${fmt(Math.round(baselineInterest))} interest total) — rather than comparing options.</p>`;
       }
     } else {
-      savingsTile = `<div class="summary-item"><div class="label">You saved</div><div class="value" style="color:var(--ink-soft); font-size:14px;">No feasible loan</div></div>`;
-      savingsNote = `<p class="note" style="margin-top:14px;">No savings comparison shown: a single ${cfg.loanApr}% loan for ${fmt(Math.round(financeAmount))} over your entered ${cfg.loanTerm} months would need ${fmt2(standardPayment)}/month — more than your ${fmt(budget)}/month budget allows, so that's not actually an option to compare against.</p>`;
+      const maxStretchedTerm = Math.ceil(cfg.loanTerm * (1 + BUDGET_FLEX_PCT/100));
+      const termFlexSim = simulateSingleLoanBaseline(financeAmount, cfg.loanApr, budget);
+
+      if(termFlexSim && termFlexSim.months <= maxStretchedTerm){
+        // Tier 2: stretching the term (not the payment) makes it work
+        savedAmount = termFlexSim.totalInterest - (detailed.totalInterest + detailed.totalFees);
+        const savedLabel = savedAmount >= 0 ? 'You saved' : 'Costs more by';
+        savingsTile = `<div class="summary-item"><div class="label">${savedLabel}</div><div class="value" style="color:var(--accent);">${fmt(Math.round(Math.abs(savedAmount)))}</div></div>`;
+        savingsNote = `<p class="note" style="margin-top:14px;">A plain ${cfg.loanApr}% loan over your entered ${cfg.loanTerm} months doesn't quite fit your ${fmt(budget)}/month budget, so this compares against the closest realistic alternative: that same loan at your stated ${fmt2(budget)}/month, taking ${termFlexSim.months} months instead.</p>`;
+      } else {
+        const flexedBudget = budget * (1 + BUDGET_FLEX_PCT/100);
+        if(standardPayment <= flexedBudget + baselineTolerance){
+          // Tier 3: term-stretching alone wasn't enough — try stretching the payment instead
+          const flexSim = simulateSingleLoanBaseline(financeAmount, cfg.loanApr, standardPayment);
+          if(flexSim){
+            savedAmount = flexSim.totalInterest - (detailed.totalInterest + detailed.totalFees);
+            const savedLabel = savedAmount >= 0 ? 'You saved' : 'Costs more by';
+            savingsTile = `<div class="summary-item"><div class="label">${savedLabel}</div><div class="value" style="color:var(--accent);">${fmt(Math.round(Math.abs(savedAmount)))}</div></div>`;
+            savingsNote = `<p class="note" style="margin-top:14px;">A plain ${cfg.loanApr}% loan over your entered ${cfg.loanTerm} months doesn't quite fit your ${fmt(budget)}/month budget, so this compares against the closest realistic alternative: that same loan at ${fmt2(standardPayment)}/month, its true required payment for that term.</p>`;
+          }
+        } else {
+          // Tier 4: neither a longer term nor a higher payment gets it within reach
+          savingsTile = `<div class="summary-item"><div class="label">You saved</div><div class="value" style="color:var(--ink-soft); font-size:14px;">No feasible loan</div></div>`;
+          savingsNote = `<p class="note" style="margin-top:14px;">No savings comparison shown: a single ${cfg.loanApr}% loan for ${fmt(Math.round(financeAmount))} over your entered ${cfg.loanTerm} months would need ${fmt2(standardPayment)}/month — too far above your ${fmt(budget)}/month budget for a fair comparison.</p>`;
+        }
+      }
     }
   }
 
