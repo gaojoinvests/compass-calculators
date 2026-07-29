@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Interest Saver Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#24302B; --ink-soft:#5B6B5F; --paper:#F7F2E9; --paper-raised:#FFFDF8;
+    --line:#DED4BE; --accent:#1F4D3A; --accent-bright:#A8BFA0;
+    --alert:#B3492F; --gold:#C9A227;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
+  .wrap{max-width:820px;margin:0 auto;padding:44px 24px 80px;}
+  header{margin-bottom:32px;border-bottom:1px solid var(--line);padding-bottom:24px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(26px,4vw,38px);margin:0 0 10px;letter-spacing:-0.01em;}
+  header p{max-width:600px;color:var(--ink-soft);margin:0;font-size:15px;}
+
+  .panel{background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:22px 24px;}
+  .panel + .panel{margin-top:18px;}
+  .panel h2{font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin:0 0 14px;}
+
+  label{display:block;font-size:12px;color:var(--ink-soft);margin:13px 0 5px;font-weight:500;}
+  label:first-of-type{margin-top:0;}
+  input[type=number], select{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;
+    font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line);}
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle-row span{font-size:13px;font-weight:500;}
+  .toggle-row span.option-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--ink);}
+  .switch{position:relative;width:38px;height:21px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider-el{position:absolute;inset:0;background:var(--line);border-radius:20px;cursor:pointer;transition:.15s;}
+  .slider-el:before{content:"";position:absolute;height:15px;width:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+  input:checked + .slider-el{background:var(--accent);}
+  input:checked + .slider-el:before{transform:translateX(17px);}
+
+  .sub-fields{display:none;padding:12px 0 4px;}
+  .sub-fields.open{display:block;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:480px){
+    .two-col{grid-template-columns:1fr;}
+    .wrap{padding-left:16px;padding-right:16px;}
+  }
+
+
+  button.run{
+    width:100%;margin-top:18px;padding:13px;border:none;border-radius:4px;
+    background:var(--ink);color:var(--paper-raised);font-weight:600;font-size:14px;cursor:pointer;letter-spacing:.02em;
+  }
+  button.run:hover{background:var(--accent);}
+  button.back{
+    background:none;border:none;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;
+    font-size:12px;cursor:pointer;padding:0;margin-bottom:18px;display:inline-flex;align-items:center;gap:6px;
+  }
+  button.back:hover{color:var(--accent);}
+
+  .assumption{font-size:11px;color:var(--ink-soft);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+
+  #view-results{display:none;}
+
+  .slideup{
+    position:fixed; left:16px; right:16px; bottom:-200px;
+    max-width:600px; margin:0 auto;
+    background:var(--accent); color:#fff; border-radius:12px;
+    padding:20px 22px; box-shadow:0 12px 32px rgba(0,0,0,0.18);
+    transition:bottom .4s ease;
+    z-index:100;
+  }
+  .slideup.show{ bottom:16px; }
+  .slideup .close{
+    position:absolute; top:10px; right:14px; background:none; border:none;
+    color:var(--accent-bright); font-size:20px; cursor:pointer; line-height:1; padding:4px;
+  }
+  .slideup h3{font-family:'Fraunces',serif; font-size:17px; margin:0 8px 6px 0; font-weight:600;}
+  .slideup p{color:var(--accent-bright); font-size:13px; margin:0 0 14px; max-width:440px;}
+  .slideup form{display:flex; gap:8px; flex-wrap:wrap;}
+  .slideup input[type=email]{
+    flex:1; min-width:180px; padding:11px 13px; border-radius:6px; border:none;
+    font-family:'Inter',sans-serif; font-size:16px;
+  }
+  .slideup button[type=submit]{
+    padding:11px 18px; border-radius:6px; border:none; background:var(--accent-bright);
+    color:var(--accent); font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap;
+  }
+  @media (max-width:480px){
+    .slideup{left:12px; right:12px; padding:18px;}
+  }
+
+  .summary-strip{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:20px;}
+  .summary-item{flex:1;min-width:150px;padding:16px 18px;background:var(--paper-raised);border-right:1px solid var(--line);}
+  .summary-item:last-child{border-right:none;}
+  .summary-item .label{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+  .summary-item .value{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;}
+  .summary-item .value.alert{color:var(--alert);}
+  .summary-item .value.accent{color:var(--accent);}
+
+  .instrument-card{background:var(--paper-raised);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:14px;}
+  .instrument-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
+  .instrument-head h3{font-family:'Fraunces',serif;font-size:16px;margin:0;}
+  .instrument-head .dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:7px;}
+  .instrument-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:8px;}
+  .stat{font-family:'IBM Plex Mono',monospace;}
+  .stat .k{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:2px;}
+  .stat .v{font-size:14px;font-weight:600;}
+  .note{font-size:12px;color:var(--ink-soft);margin-top:10px;}
+  .warn{color:var(--alert);font-weight:600;}
+
+  .timeline-wrap{margin-top:8px;}
+  svg text{font-family:'IBM Plex Mono',monospace;}
+
+  footer{margin-top:36px;font-size:11px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:16px;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="view-inputs">
+    <a href="index.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:22px;">&larr; All calculators</a>
+    <header>
+      <div class="eyebrow">The Interest Saver Calculator</div>
+      <h1>What's the cheapest way to borrow this?</h1>
+      <p>Enter what you're buying and what you've got to work with. The optimizer finds the best mix of cash, loan and 0% cards for you — no need to work it out yourself.</p>
+    </header>
+
+    <div class="panel">
+      <h2>The purchase</h2>
+      <label for="price">Price of item (£)</label>
+      <input type="number" id="price" value="10000" min="0">
+
+      <label for="cash">Cash you have available (£)</label>
+      <input type="number" id="cash" value="3000" min="0">
+
+      <label for="budget">What you can afford monthly (£)</label>
+      <input type="number" id="budget" value="292" min="0">
+    </div>
+
+    <div class="panel">
+      <h2>Borrowing available to you</h2>
+
+      <div class="toggle-row">
+        <span class="option-title">Personal Loan</span>
+        <label class="switch"><input type="checkbox" id="toggle-loan"><span class="slider-el"></span></label>
+      </div>
+      <div class="sub-fields" id="fields-loan">
+        <div class="two-col">
+          <div><label>APR (%)</label><input type="number" id="loanApr" value="12" step="0.1"></div>
+          <div><label>Max term (months)</label><input type="number" id="loanTerm" value="60"></div>
+        </div>
+        <label style="display:flex; align-items:flex-start; gap:8px; font-size:13px; font-weight:400; color:var(--ink); margin-top:12px; cursor:pointer;">
+          <input type="checkbox" id="allowFutureLoan" style="margin-top:3px;">
+          <span>Also assume you could take out a similar loan later, at today's rate?</span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span class="option-title">0% Purchase Card</span>
+        <label class="switch"><input type="checkbox" id="toggle-purchase"><span class="slider-el"></span></label>
+      </div>
+      <div class="sub-fields" id="fields-purchase">
+        <div class="two-col">
+          <div><label>0% period (months)</label><input type="number" id="purchasePromo" value="24"></div>
+          <div><label>Credit limit (£)</label><input type="number" id="purchaseLimit" value="7000"></div>
+        </div>
+        <div class="two-col">
+          <div><label>APR after promo (%)</label><input type="number" id="purchaseApr" value="24.9" step="0.1"></div>
+          <div><label>Min. payment (%)</label><input type="number" id="purchaseMin" value="2" step="0.1"></div>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <span class="option-title">0% Money Transfer Card</span>
+        <label class="switch"><input type="checkbox" id="toggle-mtc"><span class="slider-el"></span></label>
+      </div>
+      <div class="sub-fields" id="fields-mtc">
+        <div class="two-col">
+          <div><label>0% period (months)</label><input type="number" id="mtcPromo" value="18"></div>
+          <div><label>Credit limit (£)</label><input type="number" id="mtcLimit" value="7000"></div>
+        </div>
+        <div class="two-col">
+          <div><label>Transfer fee (%)</label><input type="number" id="mtcFee" value="4" step="0.1"></div>
+          <div><label>APR after promo (%)</label><input type="number" id="mtcApr" value="24.9" step="0.1"></div>
+        </div>
+        <label>Min. payment (%)</label><input type="number" id="mtcMin" value="2" step="0.1">
+      </div>
+
+      <div class="toggle-row">
+        <span class="option-title">Balance Transfer Card</span>
+        <label class="switch"><input type="checkbox" id="toggle-btc"><span class="slider-el"></span></label>
+      </div>
+      <div class="sub-fields" id="fields-btc">
+        <div class="two-col">
+          <div><label>0% period (months)</label><input type="number" id="btcPromo" value="24"></div>
+          <div><label>Credit limit (£)</label><input type="number" id="btcLimit" value="5000"></div>
+        </div>
+        <div class="two-col">
+          <div><label>Transfer fee (%)</label><input type="number" id="btcFee" value="3" step="0.1"></div>
+          <div><label>APR after promo (%)</label><input type="number" id="btcApr" value="24.9" step="0.1"></div>
+        </div>
+        <label>Min. payment (%)</label><input type="number" id="btcMin" value="2" step="0.1">
+        <p class="note">Used to move a card's balance onto a fresh 0% deal right as its own promo is about to end — only if you can get approved for one when you need it, which isn't guaranteed.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <button class="run" onclick="showResults()">See my results</button>
+      <p class="assumption">Optimized for the least total interest overall. Assumes minimum card payments of 2% of the balance, and promo APRs revert fully if not cleared in time.</p>
+    </div>
+  </div>
+
+  <div id="view-results">
+    <button class="back" onclick="showInputs()">&larr; Edit my numbers</button>
+    <header>
+      <div class="eyebrow">The Interest Saver Calculator / Your results</div>
+      <h1>Here's your best mix</h1>
+    </header>
+
+    <div id="results"></div>
+  </div>
+
+  <footer>
+    Educational estimate only — not financial advice. Actual rates, fees, and credit limit approvals depend on your provider and credit profile.
+  </footer>
+</div>
+
+<div class="slideup" id="slideup">
+  <button class="close" onclick="dismissSlideup()" aria-label="Close">&times;</button>
+  <h3>Get free access to the wealth-building app</h3>
+  <p>I'm building an app to help you grow long-term wealth — free while it's in beta. Enter your email for early access, and I'll send this breakdown straight to your inbox.</p>
+  <form onsubmit="event.preventDefault(); submitSlideup(this);">
+    <input type="email" required placeholder="you@email.com">
+    <button type="submit">Get early access</button>
+  </form>
+</div>
+
+<script>
+let lastResultsSummary = '';
+
+// ===== EmailJS config — replace these three with your own values from emailjs.com =====
+const EMAILJS_PUBLIC_KEY = 'oF0fp_0wAxJaHGPSA';
+const EMAILJS_SERVICE_ID = 'service_1npg5or';
+const EMAILJS_TEMPLATE_ID = 'template_zlsy5zj';
+const OWNER_EMAIL = 'gaojoinvests@gmail.com'; // <-- your own email, so every signup also lands with you
+// ========================================================================================
+
+if(window.emailjs){
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
+
+// Builds the actual email a subscriber receives: their results, plus confirmation
+// they're on the waitlist for the app. Same shape can be reused by the other calculators
+// once they get their own email capture — just pass in the calculator's name and its
+// own plain-text results summary.
+function buildSubscriberEmail(calculatorName, resultsBody){
+  return [
+    'Hi there,',
+    '',
+    `Thanks for trying the ${calculatorName} — here's a copy of your results:`,
+    '',
+    resultsBody,
+    '',
+    "You're now on the waiting list for Compass, the wealth-building app I'm building — free to try when it launches.",
+    "I'll email you the moment early access opens up, so keep an eye on this inbox.",
+    '',
+    'Talk soon,',
+    'The Compass Team'
+  ].join('\n');
+}
+
+function submitSlideup(form){
+  slideupHandled = true;
+  const email = form.querySelector('input[type=email]').value;
+  const resultsBody = lastResultsSummary || 'Run the calculator to see your results here.';
+  const shareUrl = buildShareURL();
+  const resultsBodyWithLink = `${resultsBody}\n\nSee this with the full charts and breakdown online:\n${shareUrl}`;
+  const calculatorName = 'Interest Saver Calculator';
+
+  // send the person their actual results, plus waitlist confirmation
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: email,
+    subject: `Your ${calculatorName} results — and you're on the list`,
+    message: buildSubscriberEmail(calculatorName, resultsBodyWithLink)
+  });
+
+  // notify the site owner too — acts as simple signup storage until a proper list is wired up
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: OWNER_EMAIL,
+    subject: `New signup: ${calculatorName}`,
+    message: `New signup: ${email}\n\nTheir results:\n${resultsBodyWithLink}`
+  });
+
+  form.innerHTML = '<p style="color:#fff;font-weight:600;margin:0;">Sent — check your inbox for your results.</p>';
+}
+function bindToggle(toggleId, fieldsId){
+  const t = document.getElementById(toggleId);
+  const f = document.getElementById(fieldsId);
+  t.addEventListener('change', ()=> f.classList.toggle('open', t.checked));
+}
+bindToggle('toggle-loan','fields-loan');
+bindToggle('toggle-purchase','fields-purchase');
+bindToggle('toggle-mtc','fields-mtc');
+bindToggle('toggle-btc','fields-btc');
+
+// All the input field IDs that make up a full scenario — used both to build a shareable
+// link and to read one back in when someone arrives via that link.
+const SHAREABLE_FIELDS = [
+  ['price','value'], ['cash','value'], ['budget','value'],
+  ['toggle-loan','checked'], ['loanApr','value'], ['loanTerm','value'], ['allowFutureLoan','checked'],
+  ['toggle-purchase','checked'], ['purchasePromo','value'], ['purchaseLimit','value'], ['purchaseApr','value'], ['purchaseMin','value'],
+  ['toggle-mtc','checked'], ['mtcPromo','value'], ['mtcLimit','value'], ['mtcApr','value'], ['mtcFee','value'], ['mtcMin','value'],
+  ['toggle-btc','checked'], ['btcPromo','value'], ['btcLimit','value'], ['btcApr','value'], ['btcFee','value'], ['btcMin','value']
+];
+
+// Builds a link back to this exact scenario — used in the results email so clicking it
+// re-opens the live, fully-charted results page rather than sending a static attachment.
+function buildShareURL(){
+  const params = new URLSearchParams();
+  SHAREABLE_FIELDS.forEach(([id, kind])=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    params.set(id, kind === 'checked' ? (el.checked ? '1' : '0') : el.value);
+  });
+  const base = window.location.origin + window.location.pathname;
+  return `${base}?${params.toString()}`;
+}
+
+// If someone arrives via a shared results link, read the scenario back out of the URL,
+// fill in every field, and jump straight to the results screen — no re-entering anything.
+function applyParamsFromURLAndShowResults(){
+  const params = new URLSearchParams(window.location.search);
+  if(!params.has('price')) return false;
+  SHAREABLE_FIELDS.forEach(([id, kind])=>{
+    if(!params.has(id)) return;
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(kind === 'checked'){
+      el.checked = params.get(id) === '1';
+      el.dispatchEvent(new Event('change'));
+    } else {
+      el.value = params.get(id);
+    }
+  });
+  showResults();
+  return true;
+}
+
+let slideupTimer = null;
+let slideupHandled = false; // true once dismissed or submitted — never nag again this session
+
+function showInputs(){
+  document.getElementById('view-results').style.display='none';
+  document.getElementById('view-inputs').style.display='block';
+  window.scrollTo(0,0);
+  if(slideupTimer){ clearTimeout(slideupTimer); slideupTimer = null; }
+  dismissSlideup(false);
+}
+function showResults(){
+  runOptimizer();
+  document.getElementById('view-inputs').style.display='none';
+  document.getElementById('view-results').style.display='block';
+  window.scrollTo(0,0);
+  if(!slideupHandled){
+    if(slideupTimer) clearTimeout(slideupTimer);
+    slideupTimer = setTimeout(()=>{
+      document.getElementById('slideup').classList.add('show');
+    }, 10000);
+  }
+}
+function dismissSlideup(remember){
+  document.getElementById('slideup').classList.remove('show');
+  if(remember !== false) slideupHandled = true;
+}
+
+function fmt(n){ return '£' + n.toLocaleString('en-GB', {maximumFractionDigits:0}); }
+function fmt2(n){ return '£' + n.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function amortizedPayment(balance, aprPct, termMonths){
+  const r = aprPct/100/12;
+  if(r === 0) return balance/termMonths;
+  return balance * r / (1 - Math.pow(1+r, -termMonths));
+}
+
+const MIN_PAYMENT_FLOOR = 5;
+const COLORS = {loan:'#2F6F4E', loanContractual:'#2F6F4E', loanOverpay:'#8FBFA3', purchase:'#6FCF97', mtc:'#C9A227', btc:'#7B6FCF'};
+const LABELS = {loan:'Personal loan', loanContractual:'Loan (contractual)', loanOverpay:'Loan (overpayment)', purchase:'0% purchase card', mtc:'0% money transfer card', btc:'Balance transfer card', cashExtra:'Cash'};
+
+function buildDebts(split, cfg){
+  const debts = [];
+  if(cfg.loanOn){
+    // Created whenever the loan option is enabled, even if the initial split put nothing
+    // here — this lets it later "open" to rescue a card's residual balance, sized exactly
+    // to what's needed, rather than only ever being a day-one commitment.
+    debts.push({key:'loan', label:LABELS.loan, balance:split.loan||0, isCard:false, apr:cfg.loanApr,
+      fixedPayment: amortizedPayment(split.loan||0, cfg.loanApr, cfg.loanTerm)});
+  }
+  if(split.purchase > 0.5){
+    debts.push({key:'purchase', label:LABELS.purchase, balance:split.purchase, isCard:true,
+      promoMonths:cfg.purchasePromo, aprAfter:cfg.purchaseApr, minPct:cfg.purchaseMin, fee:0});
+  }
+  if(split.mtc > 0.5){
+    const feeAmt = split.mtc * (cfg.mtcFee/100);
+    debts.push({key:'mtc', label:LABELS.mtc, balance:split.mtc+feeAmt, principalOnly:split.mtc, isCard:true,
+      promoMonths:cfg.mtcPromo, aprAfter:cfg.mtcApr, minPct:cfg.mtcMin, fee:feeAmt});
+  }
+  if(cfg.btcOn){
+    // Starts empty — it only exists to receive a transferred balance later, so it isn't
+    // part of the amount being financed and never appears in the split search.
+    debts.push({key:'btc', label:LABELS.btc, balance:0, isCard:true,
+      promoMonths:cfg.btcPromo, aprAfter:cfg.btcApr, minPct:cfg.btcMin, fee:0,
+      transferStartMonth:null, limit:cfg.btcLimit});
+  }
+  return debts;
+}
+
+// The 0% deadline for a normal card is fixed from month 0. For the balance transfer card,
+// its deadline only starts counting once something has actually been transferred onto it.
+function promoEndFor(d){
+  if(d.key !== 'btc') return d.promoMonths;
+  return d.transferStartMonth === null ? Infinity : d.transferStartMonth + d.promoMonths;
+}
+
+// Right as a card's own 0% window is about to end with a balance still outstanding, check
+// whether rescuing it is worthwhile — either onto the balance transfer card (if the fee is
+// worth it) or straight onto the personal loan (if the loan's rate beats the card's reverted
+// rate). A personal loan has no fee and no 0% window of its own, but if its APR is lower than
+// what the card would revert to, opening it (or topping it up) right at this moment — sized
+// exactly to the residual — beats letting the balance revert and beats pre-committing that
+// money to the loan on day one, when the card's own 0% window was still doing the job for free.
+function attemptTransfers(debts, months, cfg, cleared){
+  const btc = debts.find(d=>d.key==='btc');
+  const loan = debts.find(d=>d.key==='loan');
+  let feeCharged = 0, btcAmount = 0, loanRescueAmount = 0;
+  const candidates = debts.filter(d=> (d.key==='purchase' || d.key==='mtc') && d.balance > 0.01 && months === d.promoMonths);
+
+  candidates.forEach(d=>{
+    // Option 1: balance transfer card — try this first, since a genuine 0% window (even one
+    // that itself later reverts) generally beats paying loan interest immediately.
+    if(cfg.btcOn && btc){
+      const remainingCapacity = Math.max(0, btc.limit - btc.balance);
+      if(remainingCapacity > 1){
+        const transferAmt = Math.min(d.balance, remainingCapacity);
+        const fee = transferAmt * (cfg.btcFee/100);
+        const threshold = transferAmt * (d.aprAfter/100/12) * 3;
+        if(transferAmt > 1 && fee < threshold){
+          d.balance -= transferAmt;
+          btc.balance += transferAmt + fee;
+          feeCharged += fee;
+          btcAmount += transferAmt;
+          if(btc.transferStartMonth === null) btc.transferStartMonth = months;
+        }
+      }
+    }
+    // Option 2: whatever's left (or all of it, if no BTC took any) rescues onto the loan,
+    // if the loan is enabled, genuinely cheaper than the card's reverted rate, AND the person
+    // has explicitly said they're comfortable assuming a similar loan would be available later —
+    // this is a real, unverifiable assumption about future lending, not something to default to.
+    if(d.balance > 0.01 && cfg.loanOn && cfg.allowFutureLoan && loan && cfg.loanApr < d.aprAfter){
+      const rescueAmt = d.balance;
+      d.balance = 0;
+      loan.balance += rescueAmt;
+      const remainingTerm = Math.max(1, cfg.loanTerm - months);
+      loan.fixedPayment = amortizedPayment(loan.balance, cfg.loanApr, remainingTerm);
+      loanRescueAmount += rescueAmt;
+    }
+    if(d.balance <= 0.01 && cleared && !cleared[d.key]) cleared[d.key] = months+1;
+  });
+
+  return {fee:feeCharged, btcAmount, loanRescueAmount};
+}
+
+function simulateMix(split, cfg, budget, collectHistory){
+  const debts = buildDebts(split, cfg);
+  let totalInterest = 0, totalFees = 0;
+  debts.forEach(d=> totalFees += (d.fee||0));
+  let months = 0;
+  const cleared = {};
+  let firstMonthPayment = null;
+  const history = collectHistory ? [] : null;
+  const interestByKey = {}; debts.forEach(d=>interestByKey[d.key]=0);
+  let btcTransferredTotal = 0, btcTransferMonth = null, btcTransferFee = 0;
+  let loanRescueTotal = 0, loanRescueMonth = null;
+
+  while(months < 600){
+    const transferResult = attemptTransfers(debts, months, cfg, cleared);
+    totalFees += transferResult.fee;
+    if(transferResult.btcAmount > 0){
+      btcTransferredTotal += transferResult.btcAmount;
+      btcTransferFee += transferResult.fee;
+      if(btcTransferMonth === null) btcTransferMonth = months+1;
+    }
+    if(transferResult.loanRescueAmount > 0){
+      loanRescueTotal += transferResult.loanRescueAmount;
+      if(loanRescueMonth === null) loanRescueMonth = months+1;
+    }
+
+    const active = debts.filter(d => d.balance > 0.01);
+    if(active.length === 0) break;
+
+    active.forEach(d=>{
+      d._promoEnd = d.isCard ? promoEndFor(d) : null;
+      d._rate = d.isCard ? ((months < d._promoEnd) ? 0 : d.aprAfter/100/12) : d.apr/100/12;
+      d._min = d.isCard ? Math.max(d.balance*(d.minPct/100), Math.min(MIN_PAYMENT_FLOOR, d.balance))
+                        : Math.min(d.fixedPayment, d.balance + d.balance*d._rate);
+    });
+
+    const sumMin = active.reduce((s,d)=>s+d._min,0);
+    // A shortfall of a few pence shouldn't reject an otherwise-viable option outright —
+    // real budgets and contractual payments rarely line up to the exact penny, and rejecting
+    // the genuinely cheapest split over pocket change was causing worse recommendations.
+    const feasibilityTolerance = Math.max(1, budget*0.005);
+    if(sumMin > budget + feasibilityTolerance) return null;
+
+    let leftover = Math.max(0, budget - sumMin);
+
+    // a 0% card only NEEDS extra now if waiting one more month would make it mathematically
+    // impossible to clear before its deadline. Until that point, spare budget is better spent
+    // reducing the interest-bearing loan (which is costing money every month), since money
+    // deferred onto the 0% card costs nothing as long as the balance clears before its promo ends.
+    active.forEach(d=>{
+      if(d.isCard && months < d._promoEnd && isFinite(d._promoEnd)){
+        const monthsLeft = d._promoEnd - months;
+        const otherMinsSum = sumMin - d._min;
+        const capacityPerMonth = Math.max(0, budget - otherMinsSum);
+        const balanceAfterMinThisMonth = Math.max(0, d.balance - d._min);
+        d._urgentExtra = Math.max(0, balanceAfterMinThisMonth - (monthsLeft-1)*capacityPerMonth);
+      } else {
+        d._urgentExtra = 0;
+      }
+    });
+    const atRiskList = active.filter(d=> d._urgentExtra > 0.01)
+                        .sort((a,b)=> (a._promoEnd-months) - (b._promoEnd-months));
+
+    const extraFor = {};
+    // stage 1: give each at-risk card exactly the minimum extra needed to stay feasible — no more
+    atRiskList.forEach(d=>{
+      if(leftover <= 0) return;
+      const give = Math.min(leftover, d._urgentExtra);
+      extraFor[d.key] = (extraFor[d.key]||0) + give;
+      leftover -= give;
+    });
+    // stage 2: everything else spare goes to the highest-rate debt (typically the loan)
+    const others = active.filter(d=> !atRiskList.includes(d)).sort((a,b)=> b._rate - a._rate);
+    others.forEach(d=>{
+      if(leftover <= 0) return;
+      const can = Math.max(0, d.balance - d._min - (extraFor[d.key]||0));
+      const give = Math.min(leftover, can);
+      extraFor[d.key] = (extraFor[d.key]||0) + give;
+      leftover -= give;
+    });
+    // stage 3: any remainder (everything else already fully covered) can go further into cards
+    atRiskList.forEach(d=>{
+      if(leftover <= 0) return;
+      const can = Math.max(0, d.balance - d._min - (extraFor[d.key]||0));
+      const give = Math.min(leftover, can);
+      extraFor[d.key] = (extraFor[d.key]||0) + give;
+      leftover -= give;
+    });
+
+    const monthRecord = collectHistory ? {month: months+1, payments:{}, balances:{}, interestByKey:{}, interestThisMonth: 0} : null;
+
+    active.forEach(d=>{
+      const payment = d._min + (extraFor[d.key]||0);
+      if(months === 0) firstMonthPayment = (firstMonthPayment||0) + payment;
+      const interest = d.balance * d._rate;
+      let principal = payment - interest;
+      if(principal > d.balance) principal = d.balance;
+      d.balance -= principal;
+      totalInterest += interest;
+      interestByKey[d.key] += interest;
+      if(d.balance <= 0.01 && !cleared[d.key]) cleared[d.key] = months+1;
+      if(monthRecord){
+        monthRecord.interestThisMonth += interest;
+        monthRecord.interestByKey[d.key] = interest;
+        if(d.key==='loan'){
+          monthRecord.payments.loanContractual = d._min;
+          monthRecord.payments.loanOverpay = payment - d._min;
+          monthRecord.payments.loan = payment;
+        } else {
+          monthRecord.payments[d.key] = payment;
+        }
+      }
+    });
+
+    if(monthRecord){
+      debts.forEach(d=>{ monthRecord.balances[d.key] = Math.max(0,d.balance); });
+      monthRecord.total = active.reduce((s,d)=> s + (d.key==='loan' ? monthRecord.payments.loan : monthRecord.payments[d.key]), 0);
+      history.push(monthRecord);
+    }
+
+    months++;
+  }
+
+  if(debts.some(d=>d.balance>0.01)) return null;
+
+  return {
+    months, totalInterest, totalFees,
+    totalPaid: split.loan+split.purchase+split.mtc+totalInterest+totalFees,
+    startingPayment: firstMonthPayment, cleared, interestByKey, history, debtKeys: debts.map(d=>d.key),
+    btcTransferredTotal, btcTransferMonth, btcTransferFee, loanRescueTotal, loanRescueMonth
+  };
+}
+
+// Same repayment engine as simulateMix, but the loan's overpayment is held at a single
+// constant amount every month (rather than jumping around as card priorities shift) —
+// much easier for a person to actually commit to paying each month.
+function simulateSmoothedLoan(split, cfg, budget, loanOverpay, collectHistory){
+  const debts = buildDebts(split, cfg);
+  const loan = debts.find(d=>d.key==='loan');
+  let totalInterest = 0, totalFees = 0;
+  debts.forEach(d=> totalFees += (d.fee||0));
+  let months = 0;
+  const cleared = {};
+  let firstMonthPayment = null;
+  const history = collectHistory ? [] : null;
+  const interestByKey = {}; debts.forEach(d=>interestByKey[d.key]=0);
+  let btcTransferredTotal = 0, btcTransferMonth = null, btcTransferFee = 0;
+  let loanRescueTotal = 0, loanRescueMonth = null;
+
+  while(months < 600){
+    const transferResult = attemptTransfers(debts, months, cfg, cleared);
+    totalFees += transferResult.fee;
+    if(transferResult.btcAmount > 0){
+      btcTransferredTotal += transferResult.btcAmount;
+      btcTransferFee += transferResult.fee;
+      if(btcTransferMonth === null) btcTransferMonth = months+1;
+    }
+    if(transferResult.loanRescueAmount > 0){
+      loanRescueTotal += transferResult.loanRescueAmount;
+      if(loanRescueMonth === null) loanRescueMonth = months+1;
+    }
+
+    const active = debts.filter(d => d.balance > 0.01);
+    if(active.length === 0) break;
+
+    active.forEach(d=>{
+      d._promoEnd = d.isCard ? promoEndFor(d) : null;
+      d._rate = d.isCard ? ((months < d._promoEnd) ? 0 : d.aprAfter/100/12) : d.apr/100/12;
+      d._min = d.isCard ? Math.max(d.balance*(d.minPct/100), Math.min(MIN_PAYMENT_FLOOR, d.balance))
+                        : Math.min(d.fixedPayment, d.balance + d.balance*d._rate);
+    });
+
+    const sumMin = active.reduce((s,d)=>s+d._min,0);
+    const feasibilityTolerance = Math.max(1, budget*0.005);
+    if(sumMin > budget + feasibilityTolerance) return null;
+
+    let loanExtra = 0;
+    if(loan && loan.balance > 0.01){
+      const can = Math.max(0, loan.balance - loan._min);
+      loanExtra = Math.min(loanOverpay, can);
+    }
+    let leftover = Math.max(0, budget - sumMin - loanExtra);
+
+    const cards = active.filter(d=>d.isCard);
+    cards.forEach(d=>{
+      if(months < d._promoEnd && isFinite(d._promoEnd)){
+        const monthsLeft = d._promoEnd - months;
+        const otherMinsSum = sumMin - d._min;
+        const capacityPerMonth = Math.max(0, budget - otherMinsSum - loanExtra);
+        const balanceAfterMinThisMonth = Math.max(0, d.balance - d._min);
+        d._urgentExtra = Math.max(0, balanceAfterMinThisMonth - (monthsLeft-1)*capacityPerMonth);
+      } else {
+        d._urgentExtra = 0;
+      }
+    });
+    const atRiskList = cards.filter(d=> d._urgentExtra > 0.01)
+                        .sort((a,b)=> (a._promoEnd-months) - (b._promoEnd-months));
+
+    const extraFor = {};
+    // stage 1: give each at-risk card exactly the minimum extra needed to stay feasible
+    atRiskList.forEach(d=>{
+      if(leftover <= 0) return;
+      const give = Math.min(leftover, d._urgentExtra);
+      extraFor[d.key] = (extraFor[d.key]||0) + give;
+      leftover -= give;
+    });
+    // stage 2: since the loan's payment is fixed here, any further leftover is safer going
+    // BACK into at-risk cards (as a buffer) than into a non-urgent card — the urgentExtra
+    // estimate assumes all future spare stays available to it, so diverting spare elsewhere
+    // first is what causes an at-risk card to quietly fall behind and miss its deadline.
+    atRiskList.forEach(d=>{
+      if(leftover <= 0) return;
+      const can = Math.max(0, d.balance - d._min - (extraFor[d.key]||0));
+      const give = Math.min(leftover, can);
+      extraFor[d.key] = (extraFor[d.key]||0) + give;
+      leftover -= give;
+    });
+    // stage 3: only once every at-risk card is fully covered does any remainder go to
+    // non-urgent cards (harmless either way, since they're still within their 0% window)
+    const otherCards = cards.filter(d=> !atRiskList.includes(d)).sort((a,b)=> b._rate - a._rate);
+    otherCards.forEach(d=>{
+      if(leftover <= 0) return;
+      const can = Math.max(0, d.balance - d._min - (extraFor[d.key]||0));
+      const give = Math.min(leftover, can);
+      extraFor[d.key] = (extraFor[d.key]||0) + give;
+      leftover -= give;
+    });
+    // any genuine leftover (cards all satisfied, loan already at its capped overpay) tops up the loan —
+    // this only really bites in the final month or two as things wind down
+    if(loan && loan.balance > 0.01 && leftover > 0){
+      const can = Math.max(0, loan.balance - loan._min - loanExtra);
+      const give = Math.min(leftover, can);
+      loanExtra += give;
+      leftover -= give;
+    }
+
+    const monthRecord = collectHistory ? {month: months+1, payments:{}, balances:{}, interestByKey:{}, interestThisMonth: 0} : null;
+
+    active.forEach(d=>{
+      const payment = d.key==='loan' ? d._min + loanExtra : d._min + (extraFor[d.key]||0);
+      if(months === 0) firstMonthPayment = (firstMonthPayment||0) + payment;
+      const interest = d.balance * d._rate;
+      let principal = payment - interest;
+      if(principal > d.balance) principal = d.balance;
+      d.balance -= principal;
+      totalInterest += interest;
+      interestByKey[d.key] += interest;
+      if(d.balance <= 0.01 && !cleared[d.key]) cleared[d.key] = months+1;
+      if(monthRecord){
+        monthRecord.interestThisMonth += interest;
+        monthRecord.interestByKey[d.key] = interest;
+        if(d.key==='loan'){
+          monthRecord.payments.loanContractual = d._min;
+          monthRecord.payments.loanOverpay = payment - d._min;
+          monthRecord.payments.loan = payment;
+        } else {
+          monthRecord.payments[d.key] = payment;
+        }
+      }
+    });
+
+    if(monthRecord){
+      debts.forEach(d=>{ monthRecord.balances[d.key] = Math.max(0,d.balance); });
+      monthRecord.total = active.reduce((s,d)=> s + (d.key==='loan' ? monthRecord.payments.loan : monthRecord.payments[d.key]), 0);
+      history.push(monthRecord);
+    }
+
+    months++;
+  }
+
+  if(debts.some(d=>d.balance>0.01)) return null;
+
+  return {
+    months, totalInterest, totalFees,
+    totalPaid: split.loan+split.purchase+split.mtc+totalInterest+totalFees,
+    startingPayment: firstMonthPayment, cleared, interestByKey, history, debtKeys: debts.map(d=>d.key),
+    btcTransferredTotal, btcTransferMonth, btcTransferFee, loanRescueTotal, loanRescueMonth
+  };
+}
+
+// Search for the constant monthly loan overpayment that minimizes total interest —
+// same idea as optimizing the split, but for a single number instead.
+// Baseline for the "amount saved" comparison: what a single ordinary personal loan for the
+// whole amount would cost, paying the person's full stated monthly budget every month —
+// the most obvious alternative to actually comparing and splitting across instruments.
+function simulateSingleLoanBaseline(amount, aprPct, monthlyPayment){
+  const r = aprPct/100/12;
+  let bal = amount, months = 0, totalInterest = 0;
+  if(monthlyPayment <= bal*r) return null; // budget doesn't even cover the interest
+  while(bal > 0.01 && months < 600){
+    const interest = bal*r;
+    let principal = monthlyPayment - interest;
+    if(principal > bal) principal = bal;
+    bal -= principal;
+    totalInterest += interest;
+    months++;
+  }
+  return {months, totalInterest};
+}
+
+function findBestLoanOverpay(split, cfg, budget){
+  if(split.loan <= 0.5) return null; // nothing to smooth
+  const debts = buildDebts(split, cfg);
+  const loan = debts.find(d=>d.key==='loan');
+  const otherMins = debts.filter(d=>d.key!=='loan')
+    .reduce((s,d)=> s + Math.max(d.balance*(d.minPct/100), Math.min(MIN_PAYMENT_FLOOR, d.balance)), 0);
+  const maxOverpay = Math.max(0, budget - loan.fixedPayment - otherMins);
+  const steps = 30;
+  let best = null;
+  for(let i=0;i<=steps;i++){
+    const X = maxOverpay * i/steps;
+    const sim = simulateSmoothedLoan(split, cfg, budget, X, false);
+    if(sim){
+      const cost = sim.totalInterest + sim.totalFees;
+      if(!best || cost < best.cost - 0.01){ best = {overpay:X, cost}; }
+    }
+  }
+  return best;
+}
+
+// Given a target monthly payment, solve for the loan term (in whole months) whose
+// contractual payment comes closest to it — so instead of "overpaying" a longer loan,
+// we can present a shorter loan that contractually requires exactly this payment.
+function solveLoanTermForPayment(balance, aprPct, targetPayment){
+  const r = aprPct/100/12;
+  if(targetPayment <= 0) return null;
+  if(r === 0) return Math.max(1, Math.round(balance/targetPayment));
+  const ratio = balance*r/targetPayment;
+  if(ratio >= 1) return null; // payment too low to ever amortize this loan
+  const T = -Math.log(1-ratio)/Math.log(1+r);
+  return Math.max(1, Math.round(T));
+}
+
+function optimizeMix(financeAmount, cashAvailable, cfg, budget){
+  const steps = 20;
+  const results = [];
+  const cashMax = Math.min(cashAvailable, financeAmount);
+  const purchaseMax = cfg.purchaseOn ? Math.min(cfg.purchaseLimit, financeAmount) : 0;
+  const mtcMax = cfg.mtcOn ? Math.min(cfg.mtcLimit, financeAmount) : 0;
+
+  for(let i=0;i<=steps;i++){
+    const cashExtra = cashMax * i/steps;
+    for(let j=0;j<=steps;j++){
+      const purchase = purchaseMax * j/steps;
+      if(cashExtra+purchase > financeAmount+0.5) continue;
+      for(let k=0;k<=steps;k++){
+        const mtc = mtcMax * k/steps;
+        const used = cashExtra+purchase+mtc;
+        if(used > financeAmount+0.5) continue;
+        const remainder = financeAmount - used;
+        if(remainder > 0.5 && !cfg.loanOn) continue;
+        const loan = remainder > 0.5 ? remainder : 0;
+        const split = {cashExtra, purchase, mtc, loan};
+        const sim = simulateMix(split, cfg, budget, false);
+        if(sim) results.push({split, sim});
+      }
+    }
+  }
+  if(results.length === 0) return null;
+
+  const scoreFn = r => r.sim.totalInterest + r.sim.totalFees;
+
+  results.sort((a,b)=> scoreFn(a)-scoreFn(b));
+  return results[0];
+}
+
+function buildMonthlyTable(history, items){
+  const keys = items.map(([k])=>k);
+  let html = `<div style="max-height:420px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:6px;">
+  <table style="width:100%;min-width:${280 + keys.length*270}px;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">
+  <thead>
+    <tr style="position:sticky;top:0;background:var(--paper-raised);box-shadow:0 1px 0 var(--line);">
+      <th rowspan="2" style="text-align:left;padding:9px 12px;vertical-align:bottom;">Month</th>
+      ${keys.map(k=>`<th colspan="3" style="text-align:center;padding:9px 12px;color:${COLORS[k]};border-left:1px solid var(--line);">${LABELS[k]}</th>`).join('')}
+      <th rowspan="2" style="text-align:right;padding:9px 12px;font-weight:600;vertical-align:bottom;">Total out</th>
+    </tr>
+    <tr style="position:sticky;top:31px;background:var(--paper-raised);box-shadow:0 1px 0 var(--line);">
+      ${keys.map(k=>`
+        <th style="text-align:right;padding:6px 10px;font-weight:500;color:var(--ink-soft);border-left:1px solid var(--line);">Payment</th>
+        <th style="text-align:right;padding:6px 10px;font-weight:500;color:var(--alert);">Interest</th>
+        <th style="text-align:right;padding:6px 10px;font-weight:500;color:var(--ink-soft);">Balance</th>
+      `).join('')}
+    </tr>
+  </thead><tbody>`;
+
+  history.forEach((r,i)=>{
+    const rowBg = i%2===0 ? 'transparent' : 'rgba(0,0,0,0.02)';
+    html += `<tr style="background:${rowBg};border-top:1px solid var(--line);">
+      <td style="padding:7px 12px;">${r.month}</td>
+      ${keys.map(k=>{
+        const amt = r.payments[k]||0;
+        const interest = (r.interestByKey && r.interestByKey[k]) || 0;
+        const bal = (r.balances && r.balances[k]) || 0;
+        return `
+          <td style="text-align:right;padding:7px 10px;border-left:1px solid var(--line);">${amt>0.5 ? fmt(Math.round(amt)) : '—'}</td>
+          <td style="text-align:right;padding:7px 10px;color:var(--alert);">${interest>0.5 ? fmt2(interest) : '£0.00'}</td>
+          <td style="text-align:right;padding:7px 10px;">${fmt(Math.round(Math.max(0,bal)))}</td>
+        `;
+      }).join('')}
+      <td style="text-align:right;padding:7px 12px;font-weight:600;">${fmt(Math.round(r.total))}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function buildLegend(items){
+  return items.map(([k])=>
+    `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px;font-size:12px;color:var(--ink);font-family:'Inter',sans-serif;">
+      <i style="width:10px;height:10px;background:${COLORS[k]};display:inline-block;border-radius:2px;"></i>${LABELS[k]}
+    </span>`
+  ).join('');
+}
+
+function runOptimizer(){
+  const price = parseFloat(document.getElementById('price').value)||0;
+  const cash = parseFloat(document.getElementById('cash').value)||0;
+  const budget = parseFloat(document.getElementById('budget').value)||0;
+  // Used only as an internal comparison yardstick when a plain loan doesn't fit the stated
+  // budget — never exposed as a user-facing option or an alternative to choose from.
+  const BUDGET_FLEX_PCT = 10;
+
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  if(price <= 0){
+    results.innerHTML = '<div class="panel">Enter a price to get started.</div>';
+    return;
+  }
+  if(budget <= 0){
+    results.innerHTML = '<div class="panel">Enter what you can afford monthly to run the optimizer.</div>';
+    return;
+  }
+
+  const cfg = {
+    loanOn: document.getElementById('toggle-loan').checked,
+    loanApr: parseFloat(document.getElementById('loanApr').value)||0,
+    loanTerm: parseInt(document.getElementById('loanTerm').value)||60,
+    allowFutureLoan: document.getElementById('allowFutureLoan').checked,
+    purchaseOn: document.getElementById('toggle-purchase').checked,
+    purchasePromo: parseInt(document.getElementById('purchasePromo').value)||0,
+    purchaseLimit: parseFloat(document.getElementById('purchaseLimit').value)||0,
+    purchaseApr: parseFloat(document.getElementById('purchaseApr').value)||0,
+    purchaseMin: parseFloat(document.getElementById('purchaseMin').value)||2,
+    mtcOn: document.getElementById('toggle-mtc').checked,
+    mtcPromo: parseInt(document.getElementById('mtcPromo').value)||0,
+    mtcLimit: parseFloat(document.getElementById('mtcLimit').value)||0,
+    mtcApr: parseFloat(document.getElementById('mtcApr').value)||0,
+    mtcFee: parseFloat(document.getElementById('mtcFee').value)||0,
+    mtcMin: parseFloat(document.getElementById('mtcMin').value)||2,
+    btcOn: document.getElementById('toggle-btc').checked,
+    btcPromo: parseInt(document.getElementById('btcPromo').value)||0,
+    btcLimit: parseFloat(document.getElementById('btcLimit').value)||0,
+    btcApr: parseFloat(document.getElementById('btcApr').value)||0,
+    btcFee: parseFloat(document.getElementById('btcFee').value)||0,
+    btcMin: parseFloat(document.getElementById('btcMin').value)||2
+  };
+
+  if(!cfg.loanOn && !cfg.purchaseOn && !cfg.mtcOn && cash < price){
+    results.innerHTML = '<div class="panel">Enable at least one financing option — or enough cash — to cover this amount.</div>';
+    return;
+  }
+
+  const best = optimizeMix(price, cash, cfg, budget);
+  if(!best){
+    results.innerHTML = '<div class="panel">None of the enabled combinations clear within your monthly budget — increase the budget or enable another option.</div>';
+    return;
+  }
+
+  // Find the best constant monthly overpayment on top of the loan's normal contractual payment.
+  const bestOverpay = best.split.loan > 0.5 ? findBestLoanOverpay(best.split, cfg, budget) : null;
+  const detailed = bestOverpay
+    ? simulateSmoothedLoan(best.split, cfg, budget, bestOverpay.overpay, true)
+    : simulateMix(best.split, cfg, budget, true);
+
+  // Baseline comparison: a single ordinary loan for the whole amount, at the APR you entered.
+  // Use your entered term IF your budget can actually cover its standard payment. If your
+  // budget is lower than that, a loan over that term wouldn't actually be available to you —
+  // so instead we stretch the term until the standard payment matches what you said you can
+  // afford, which is the fair (and always the higher-interest, worse-case) comparison.
+  // The baseline is run through the exact same month-by-month simulation as the recommended
+  // mix (not a closed-form formula), so the two numbers are never off by a rounding artifact —
+  // if they're ever both true single-loan scenarios, they land on exactly the same figure.
+  // Crucially: the baseline always uses your entered term exactly, never silently extending it —
+  // if a plain loan over that term genuinely isn't affordable at your stated budget, comparing
+  // against it wouldn't be fair either way. But if you've said you have some flexibility on the
+  // Baseline comparison: a single ordinary loan for the whole amount, at the APR you entered.
+  // Preference order, most to least convenient:
+  //   1. Fits your entered term and budget exactly as stated — use that.
+  //   2. Doesn't fit as stated, but stretching the TERM by up to 10% (while keeping your exact
+  //      stated monthly payment) makes it work — a longer term is usually the less painful
+  //      trade-off, so this is tried before ever touching the payment amount.
+  //   3. Term-stretching alone isn't enough, but stretching the PAYMENT by up to 10% (keeping
+  //      your entered term) makes it work instead.
+  //   4. Neither works — no honest comparison to show.
+  // None of this ever appears as a selectable option — it only feeds the "you saved" figure,
+  // and the results only ever show what the optimizer actually chose.
+  const financeAmount = price - cash;
+  let savingsNote = '';
+  let savingsTile = '';
+  let savedAmount = null;
+  if(cfg.loanOn && financeAmount > 0.5){
+    const standardPayment = amortizedPayment(financeAmount, cfg.loanApr, cfg.loanTerm);
+    const baselineTolerance = Math.max(1, budget*0.005);
+
+    if(standardPayment <= budget + baselineTolerance){
+      // Tier 1: fits your entered term and budget exactly as stated
+      const baselineSim = simulateSingleLoanBaseline(financeAmount, cfg.loanApr, standardPayment);
+      if(baselineSim){
+        const baselineInterest = baselineSim.totalInterest;
+        const baselineTerm = baselineSim.months;
+        savedAmount = baselineInterest - (detailed.totalInterest + detailed.totalFees);
+        savingsTile = `<div class="summary-item"><div class="label">You saved</div><div class="value" style="color:var(--accent);">${fmt(Math.round(savedAmount))}</div></div>`;
+        savingsNote = `<p class="note" style="margin-top:14px;">Compared with the default way most people do this: a single ${cfg.loanApr}% loan for ${fmt(Math.round(financeAmount))} over ${baselineTerm} months, paying ${fmt2(standardPayment)}/month (${fmt(Math.round(baselineInterest))} interest total) — rather than comparing options.</p>`;
+      }
+    } else {
+      const maxStretchedTerm = Math.ceil(cfg.loanTerm * (1 + BUDGET_FLEX_PCT/100));
+      const termFlexSim = simulateSingleLoanBaseline(financeAmount, cfg.loanApr, budget);
+
+      if(termFlexSim && termFlexSim.months <= maxStretchedTerm){
+        // Tier 2: stretching the term (not the payment) makes it work
+        savedAmount = termFlexSim.totalInterest - (detailed.totalInterest + detailed.totalFees);
+        const savedLabel = savedAmount >= 0 ? 'You saved' : 'Costs more by';
+        savingsTile = `<div class="summary-item"><div class="label">${savedLabel}</div><div class="value" style="color:var(--accent);">${fmt(Math.round(Math.abs(savedAmount)))}</div></div>`;
+        savingsNote = `<p class="note" style="margin-top:14px;">A plain ${cfg.loanApr}% loan over your entered ${cfg.loanTerm} months doesn't quite fit your ${fmt(budget)}/month budget, so this compares against the closest realistic alternative: that same loan at your stated ${fmt2(budget)}/month, taking ${termFlexSim.months} months instead.</p>`;
+      } else {
+        const flexedBudget = budget * (1 + BUDGET_FLEX_PCT/100);
+        if(standardPayment <= flexedBudget + baselineTolerance){
+          // Tier 3: term-stretching alone wasn't enough — try stretching the payment instead
+          const flexSim = simulateSingleLoanBaseline(financeAmount, cfg.loanApr, standardPayment);
+          if(flexSim){
+            savedAmount = flexSim.totalInterest - (detailed.totalInterest + detailed.totalFees);
+            const savedLabel = savedAmount >= 0 ? 'You saved' : 'Costs more by';
+            savingsTile = `<div class="summary-item"><div class="label">${savedLabel}</div><div class="value" style="color:var(--accent);">${fmt(Math.round(Math.abs(savedAmount)))}</div></div>`;
+            savingsNote = `<p class="note" style="margin-top:14px;">A plain ${cfg.loanApr}% loan over your entered ${cfg.loanTerm} months doesn't quite fit your ${fmt(budget)}/month budget, so this compares against the closest realistic alternative: that same loan at ${fmt2(standardPayment)}/month, its true required payment for that term.</p>`;
+          }
+        } else {
+          // Tier 4: neither a longer term nor a higher payment gets it within reach
+          savingsTile = `<div class="summary-item"><div class="label">You saved</div><div class="value" style="color:var(--ink-soft); font-size:14px;">No feasible loan</div></div>`;
+          savingsNote = `<p class="note" style="margin-top:14px;">No savings comparison shown: a single ${cfg.loanApr}% loan for ${fmt(Math.round(financeAmount))} over your entered ${cfg.loanTerm} months would need ${fmt2(standardPayment)}/month — too far above your ${fmt(budget)}/month budget for a fair comparison.</p>`;
+        }
+      }
+    }
+  }
+
+  // summary strip
+  const strip = document.createElement('div'); strip.className='summary-strip';
+  strip.innerHTML = `
+    <div class="summary-item"><div class="label">Fully paid off</div><div class="value">Month ${detailed.months}</div></div>
+    <div class="summary-item"><div class="label">Total interest + fees</div><div class="value alert">${fmt(Math.round(detailed.totalInterest+detailed.totalFees))}</div></div>
+    <div class="summary-item"><div class="label">Starting monthly outgoing</div><div class="value accent">${fmt(Math.round(detailed.startingPayment))}</div></div>
+    ${savingsTile}
+  `;
+  results.appendChild(strip);
+  if(savingsNote){
+    const noteEl = document.createElement('div'); noteEl.innerHTML = savingsNote;
+    results.appendChild(noteEl.firstChild);
+  }
+
+  // per-instrument breakdown
+  const split = best.split;
+  const loanTotalAmount = (split.loan||0) + (detailed.loanRescueTotal||0);
+  const items = [];
+  if(split.cashExtra > 0.5) items.push(['cashExtra', split.cashExtra]);
+  if(loanTotalAmount > 0.5) items.push(['loan', loanTotalAmount]);
+  if(split.purchase > 0.5) items.push(['purchase', split.purchase]);
+  if(split.mtc > 0.5) items.push(['mtc', split.mtc]);
+  if(detailed.btcTransferredTotal > 0.5) items.push(['btc', detailed.btcTransferredTotal]);
+
+  items.forEach(([key, amount])=>{
+    const card = document.createElement('div'); card.className='instrument-card';
+    if(key === 'cashExtra'){
+      card.innerHTML = `
+        <div class="instrument-head"><h3><span class="dot" style="background:#999"></span>Cash</h3></div>
+        <p class="note">${fmt(Math.round(amount))} paid upfront, no interest, no monthly payment.</p>`;
+      results.appendChild(card);
+      return;
+    }
+    const clearedMonth = detailed.cleared[key];
+    const interestPaid = detailed.interestByKey[key]||0;
+    const feeNote = key==='mtc' ? `<span class="stat"><span class="k">Transfer fee</span><span class="v">${fmt(Math.round(amount*cfg.mtcFee/100))}</span></span>` : '';
+
+    if(key === 'btc'){
+      const btcPromoEnd = (detailed.btcTransferMonth||1) - 1 + cfg.btcPromo;
+      const btcPromoNote = clearedMonth > btcPromoEnd
+        ? `<p class="note warn">Ran past its ${cfg.btcPromo}-month 0% window (cleared month ${clearedMonth}) — some of the interest above came from reverting to the standard APR.</p>`
+        : `<p class="note">Cleared in month ${clearedMonth}, inside its ${cfg.btcPromo}-month 0% window — no interest on this one.</p>`;
+      const card = document.createElement('div'); card.className='instrument-card';
+      card.innerHTML = `
+        <div class="instrument-head">
+          <h3><span class="dot" style="background:${COLORS.btc}"></span>${LABELS.btc}</h3>
+        </div>
+        <div class="instrument-stats">
+          <div class="stat"><span class="k">Balance transferred</span><span class="v">${fmt(Math.round(amount))}</span></div>
+          <div class="stat"><span class="k">Transferred in</span><span class="v">Month ${detailed.btcTransferMonth}</span></div>
+          <div class="stat"><span class="k">Transfer fee</span><span class="v">${fmt(Math.round(detailed.btcTransferFee))}</span></div>
+          <div class="stat"><span class="k">Paid off</span><span class="v">Month ${clearedMonth}</span></div>
+          <div class="stat"><span class="k">Interest paid</span><span class="v">${fmt(Math.round(interestPaid))}</span></div>
+        </div>
+        ${btcPromoNote}
+      `;
+      results.appendChild(card);
+      return;
+    }
+
+    const promoMonths = key==='purchase' ? cfg.purchasePromo : (key==='mtc' ? cfg.mtcPromo : null);
+    let promoNote = '';
+    if(promoMonths !== null){
+      if(cfg.btcOn && detailed.btcTransferMonth === clearedMonth && (interestPaid < 0.5)){
+        promoNote = `<p class="note">Balance transferred onto a fresh 0% deal in month ${clearedMonth}, right as this card's own window ended — no interest charged, see the balance transfer card below.</p>`;
+      } else if(clearedMonth > promoMonths){
+        promoNote = `<p class="note warn">Ran past its ${promoMonths}-month 0% window (cleared month ${clearedMonth}) — some of the interest above came from reverting to the standard APR.</p>`;
+      } else {
+        promoNote = `<p class="note">Cleared in month ${clearedMonth}, inside its ${promoMonths}-month 0% window — no interest on this one.</p>`;
+      }
+    }
+
+    let statsHtml;
+    if(key === 'loan'){
+      const firstActiveLoanMonth = detailed.history.find(r => r.payments.loan !== undefined);
+      const totalPayment = firstActiveLoanMonth
+        ? (firstActiveLoanMonth.payments.loanContractual + firstActiveLoanMonth.payments.loanOverpay)
+        : amortizedPayment(amount, cfg.loanApr, cfg.loanTerm);
+      const loanPrincipalForTerm = detailed.loanRescueMonth ? (detailed.loanRescueTotal||0) + (split.loan||0) : amount;
+      const equivTerm = solveLoanTermForPayment(loanPrincipalForTerm, cfg.loanApr, totalPayment);
+      const termLine = equivTerm && equivTerm < cfg.loanTerm
+        ? `<div class="stat"><span class="k">Equivalent term</span><span class="v">~${equivTerm} months</span></div>`
+        : '';
+      const rescueNote = detailed.loanRescueMonth
+        ? `<p class="note">${fmt(Math.round(detailed.loanRescueTotal))} of this was added in month ${detailed.loanRescueMonth} — rather than borrowing it upfront, the loan only opened once it was actually needed, rescuing a card's residual balance right as its own 0% deal ended, at ${cfg.loanApr}% instead of letting it revert to a higher rate.</p>`
+        : '';
+      statsHtml = `
+        <div class="stat"><span class="k">Amount financed</span><span class="v">${fmt(Math.round(amount))}</span></div>
+        <div class="stat"><span class="k">Monthly payment</span><span class="v">${fmt2(totalPayment)}/mo, fixed</span></div>
+        ${termLine}
+        <div class="stat"><span class="k">Paid off</span><span class="v">Month ${clearedMonth}</span></div>
+        <div class="stat"><span class="k">Interest paid</span><span class="v">${fmt(Math.round(interestPaid))}</span></div>
+      `;
+      promoNote = rescueNote;
+    } else {
+      const firstMonthPay = detailed.history[0] ? detailed.history[0].payments[key] : 0;
+      statsHtml = `
+        <div class="stat"><span class="k">Amount financed</span><span class="v">${fmt(Math.round(amount))}</span></div>
+        <div class="stat"><span class="k">Monthly payment starts at</span><span class="v">${fmt(Math.round(firstMonthPay))}</span></div>
+        <div class="stat"><span class="k">Paid off</span><span class="v">Month ${clearedMonth}</span></div>
+        <div class="stat"><span class="k">Interest paid</span><span class="v">${fmt(Math.round(interestPaid))}</span></div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="instrument-head">
+        <h3><span class="dot" style="background:${COLORS[key]}"></span>${LABELS[key]}</h3>
+      </div>
+      <div class="instrument-stats">${statsHtml}</div>
+      ${promoNote}
+    `;
+    results.appendChild(card);
+  });
+
+  // timeline — a plain monthly table with exact £ figures for where the money goes.
+  // the loan is split into its own contractual + overpayment columns so someone can see
+  // a single constant overpayment amount rather than a figure that jumps around.
+  const timelinePanel = document.createElement('div'); timelinePanel.className='panel'; timelinePanel.style.marginTop='18px';
+  timelinePanel.innerHTML = '<h2>What comes out of your account each month</h2>';
+  const tableKeys = [];
+  if(loanTotalAmount > 0.5){ tableKeys.push('loan'); }
+  if(split.purchase > 0.5) tableKeys.push('purchase');
+  if(split.mtc > 0.5) tableKeys.push('mtc');
+  if(detailed.btcTransferredTotal > 0.5) tableKeys.push('btc');
+  const legendItems = tableKeys.map(k=>[k]);
+
+  const timelineDiv = document.createElement('div'); timelineDiv.className='timeline-wrap';
+  if(tableKeys.length > 0){
+    timelineDiv.innerHTML = `<div style="margin-bottom:10px;">${buildLegend(legendItems)}</div>` +
+      buildMonthlyTable(detailed.history, legendItems);
+  } else {
+    timelineDiv.innerHTML = '<p class="note">No monthly repayments here — this was covered entirely by cash.</p>';
+  }
+  timelinePanel.appendChild(timelineDiv);
+  results.appendChild(timelinePanel);
+
+  // build a plain-text summary of the results for emailing to the person
+  let summaryLines = [];
+  summaryLines.push('Your Interest Saver Calculator results');
+  summaryLines.push('');
+  summaryLines.push(`Fully paid off: Month ${detailed.months}`);
+  summaryLines.push(`Total interest + fees: ${fmt(Math.round(detailed.totalInterest+detailed.totalFees))}`);
+  summaryLines.push(`Starting monthly outgoing: ${fmt(Math.round(detailed.startingPayment))}`);
+  if(savingsTile && savedAmount !== null) summaryLines.push(`You saved vs the standard way of doing this: ${fmt(Math.round(savedAmount))}`);
+  summaryLines.push('');
+  summaryLines.push('Your recommended mix:');
+  items.forEach(([key, amount])=>{
+    if(key === 'cashExtra'){
+      summaryLines.push(`- Cash: ${fmt(Math.round(amount))} paid upfront`);
+    } else {
+      const clearedMonth = detailed.cleared[key];
+      const interestPaid = detailed.interestByKey[key]||0;
+      summaryLines.push(`- ${LABELS[key]}: ${fmt(Math.round(amount))} financed, paid off month ${clearedMonth}, ${fmt(Math.round(interestPaid))} interest`);
+    }
+  });
+  summaryLines.push('');
+  summaryLines.push('(Educational estimate only — not financial advice.)');
+  lastResultsSummary = summaryLines.join('\n');
+}
+
+// If this page was opened via a shared results link, jump straight to the results
+applyParamsFromURLAndShowResults();
+</script>
+</body>
+</html>
