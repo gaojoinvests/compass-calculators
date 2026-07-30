@@ -32,6 +32,19 @@
   }
   header.top h1{margin:0 0 4px;font-size:20px;font-weight:700;letter-spacing:-0.2px;}
   header.top p{margin:0;font-size:13.5px;color:#cfe0d3;line-height:1.4;}
+  .back-btn{
+    background:none;
+    border:1.5px solid rgba(255,255,255,0.35);
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    padding:7px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-bottom:14px;
+    font-family:inherit;
+  }
+  .back-btn:active{background:rgba(255,255,255,0.12);}
   .screen{padding:20px;}
   .hidden{display:none !important;}
 
@@ -407,6 +420,7 @@
   <!-- SCREEN 2: RESULTS -->
   <div id="screen-results" class="hidden">
     <header class="top">
+      <button class="back-btn" onclick="backToInputs()">&larr; Back to inputs</button>
       <h1>Your Spend & Save strategy, month by month</h1>
       <p id="results-subtitle" style="font-size:13px;"></p>
     </header>
